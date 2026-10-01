@@ -10,3 +10,4 @@
 .case-controls{display:flex;justify-content:flex-end;min-width:0}
 
 .organ-check.organ-alert>strong,.organ-check.organ-alert>p,.organ-check li.organ-restriction{color:#b42318;font-weight:700}
+.calendar-nav{display:flex;gap:8px;align-items:center;margin-bottom:16px}.calendar-nav select{min-width:0;padding:10px 6px}.calendar-nav #date-year{flex:1.4}.calendar-nav #date-month{flex:1}.calendar-nav button{padding:8px 12px;font-size:22px}.calendar-week,.calendar-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}.calendar-week{color:var(--muted);font-size:13px;margin-bottom:8px}.calendar-days button{border:0;border-radius:7px;background:#f3f6f8;color:var(--ink);min-height:44px;padding:8px 0}.calendar-days button[aria-pressed=true]{background:var(--primary);color:white}#date-picker{width:min(420px,calc(100vw - 24px));padding:20px}input[data-date-picker]{cursor:pointer;padding-right:12px}.steps{scroll-margin-top:12px}
