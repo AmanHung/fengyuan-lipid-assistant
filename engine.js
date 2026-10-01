@@ -204,9 +204,33 @@ function evaluate(s,drugs=D.drugs,now=new Date()){
   return d.group==='advanced'&&action==='intensify'&&(currentIntensity==='high'||(!s.simplifiedTreatment&&s.maxTolerated==='yes')||s.tolerance==='partial'||renalDoseLimited);
  }).sort((a,b)=>{const score=d=>(d.group==='statin'?0:d.group==='combo'?2:4)+(d.payment==='legacy'?1:0);return score(a)-score(b);});
  }
- const result={risk,ldl,achieved,errors:[...new Set(errors)],missing,warnings,stops,action,title,description,followup,candidates,current,currentOrgan,organChecks,currentIntensity,days,responseDays,months3,canRecommend,ageDays,baselineReduction:number(s.baseline)&&ldl!==null?(1-ldl/number(s.baseline))*100:null,nonHDL:number(s.tc)!==null&&number(s.hdl)!==null?number(s.tc)-number(s.hdl):null};
+ const result={risk,ldl,achieved,errors:[...new Set(errors)],missing,warnings,stops,action,title,description,followup,candidates,current,currentOrgan,organChecks,specialAdvice:specialAdvice(s,current),currentIntensity,days,responseDays,months3,canRecommend,ageDays,baselineReduction:number(s.baseline)&&ldl!==null?(1-ldl/number(s.baseline))*100:null,nonHDL:number(s.tc)!==null&&number(s.hdl)!==null?number(s.tc)-number(s.hdl):null};
  result.excludedCandidates=candidates.map(d=>organChecks.find(x=>x.id===d.id)).filter(d=>!d.organ.eligible);
  result.candidates=result.candidates.map(d=>({...d,organ:organChecks.find(x=>x.id===d.id).organ,coverage:coverage(d,s,result)})).filter(d=>d.organ.eligible);return result;
+}
+function specialAdvice(s,current){
+ const cards=[];
+ if(s.dialysis==='yes'){
+  const items=[
+   {label:'是否開始治療',text:'成人已接受慢性透析：通常不新開始 statin 或 statin／ezetimibe。這是療效證據與治療策略的考量，不代表所有 statin 都因透析而禁用。'},
+   {label:'原有治療',text:current?.statin?'目前使用 '+current.brand+' '+current.strength+'：若在開始透析前已使用 statin 或 statin／ezetimibe，可評估續用。需先核對用藥與透析開始的先後、原適應症、耐受性及產品限制；不能僅憑目前用藥推定符合續用條件。':'若透析前已使用 statin 或 statin／ezetimibe，可評估續用；目前資料不足以確認用藥與透析開始的先後。'},
+   {label:'院內品項限制',text:'Atorvastatin 不需因腎功能不全減量，但不等於適合透析後新開始；pitavastatin 單方的血液透析規則為起始 1 mg、最高 2 mg／日，院內未有 1 mg，不自動分錠。Rosuvastatin 的非透析 CLcr ＜30 規則不可直接套用透析。'},
+   {label:'應避免的規格',text:'Pravafen、Fenolip-U 不用於透析；Tonvasca 不建議血液透析者使用。血液透析與腹膜透析不能共用所有品項規則，開立前須確認透析類型。'},
+   {label:'下一步',text:'由腎臟科核對起始／續用適應症及逐品項仿單，不只因 LDL-C 未達一般目標就自動加量或加複方。其他安全條件仍須同時檢查。'}
+  ];if(s.pregnancy==='yes')items.unshift({label:'同時有孕期／哺乳條件',text:'透析前已用藥的續用原則不能直接套用；請同時依下方懷孕／備孕／哺乳建議，由腎臟科與婦產科共同評估。'});cards.push({id:'dialysis',title:'透析：先區分新開始與原治療續用',items,sources:[{title:'KDIGO 脂質指引：2.3.1、2.3.2',url:'https://kdigo.org/wp-content/uploads/2017/02/KI-Lipids-Summary-and-clinical-approach.pdf',scope:'慢性透析起始／續用建議；2A／2C'},{title:'院內品項產品／成分仿單',url:'',scope:'劑量與限制詳見下方逐品項來源；血液透析資料不直接套腹膜透析'}]});
+ }
+ if(s.pregnancy==='yes'){
+  const items=[
+   {label:'先確認階段',text:'目前欄位合併懷孕、備孕與哺乳；以下依實際階段採用，不推定三者相同。'},
+   {label:'已懷孕',text:'多數孕婦應由處方醫師安排停用 statin（含複方）並檢視其他降血脂藥。非 statin 不代表孕期安全，不自動改用 ezetimibe、PCSK9 抑制劑、inclisiran 或 bempedoic acid。'},
+   {label:'計畫懷孕',text:'一般風險者於受孕前至少 1 個月、最好 3 個月，由醫師安排停用除膽酸結合樹脂外的降 LDL-C 治療；極高風險者先會診制定計畫。'},
+   {label:'哺乳中',text:'通常避免 statin。若母親心血管風險高而必須使用 statin，與醫師共同討論治療及替代哺餵方式；不自行同時續用與哺乳。'},
+   {label:'可討論的替代方向',text:'可由專科評估不被全身吸收的膽酸結合樹脂；需先確認 TG、交互作用與脂溶性維生素影響。本院供應尚未確認，因此不列成可直接開立的院內品項。嚴重家族性高膽固醇血症或既有 ASCVD，會診心臟科與婦產科，評估 LDL 分離術及個別治療。'},
+   {label:'高 TG 處理',text:threshold(s.tg,500)===true?'目前 TG ≥500 mg/dL：優先由婦產科與血脂專科處理胰臟炎風險，評估次發原因、營養介入及必要治療；不直接套用一般 fibrate 建議。若 TG ≥1,000 或伴腹痛、嘔吐，需加速評估；有急性症狀應即時就醫。':'若 TG ≥500 mg/dL，需轉專科處理胰臟炎風險；孕期不只看 LDL-C。'},
+   {label:'誤服與例外',text:'孕早期誤服 statin 不等於必然傷害胎兒，應聯絡處方醫師與婦產科評估。美國 FDA 允許極少數高危個案個別考量；這不是台灣產品仿單禁忌的解除，仍須核對台灣仿單與院內規範。'}
+  ];cards.push({id:'pregnancy',title:'懷孕／備孕／哺乳：依階段安排治療',items,sources:[{title:'NLA：孕期與哺乳血脂管理（2024）',url:'https://www.lipid.org/resource/lipid-management-in-pregnancy-and-lactation/',scope:'國外專家建議；台灣產品仿單與院內規範仍須核對'},{title:'美國 FDA：Statin 孕期與哺乳安全通訊',url:'https://www.fda.gov/drugs/drug-safety-and-availability/fda-requests-removal-strongest-warning-against-using-cholesterol-lowering-statins-during-pregnancy',scope:'美國安全通訊（2021）；不是台灣許可條件'}]});
+ }
+ return cards;
 }
 function coverage(d,s,r){
  if(d.payment==='self')return '院內自費｜不以一般 statin 療程認定健保資格。';
