@@ -153,7 +153,7 @@ function evaluate(s,drugs=D.drugs,now=new Date()){
  const achieved=ldl===null||risk.provisional?null:ldl<risk.target;
  const since=day(s.since),days=since?diffDays(since,now):null;
  const responseDays=since&&lab?diffDays(since,lab):null;
- const months3=since&&lab?diffDays(plusMonths(since,3),lab)>=0:false;
+ const months3=since&&lab?diffDays(plusMonths(since,3),lab)>0:false;
  if(s.mode==='treated'&&since&&lab&&lab<since)stops.push('血脂檢驗早於目前方案開始日，不能據此判定本療程反應');
  let action='complete',title='補齊資料後，查看治療方向',description='先輸入血脂與病史；不清楚的條件會保留為待確認。',followup='依完整評估及實際療程決定。';
  if(ldl!==null){
@@ -193,6 +193,8 @@ function evaluate(s,drugs=D.drugs,now=new Date()){
   }
   if(d.group==='combo'){
    if(action==='initiate')return false;
+   if(d.payment==='combo8w'&&!(responseDays>42))return false;
+   if(d.payment==='combo3m'&&!months3)return false;
    if(current?.ezetimibe||s.addEze==='yes')return false;
    if(current?.statin!==d.statin)return false;
    if(d.dose<number(s.dose))return false;
@@ -216,8 +218,8 @@ function coverage(d,s,r){
   if(s.primaryHyper!=='yes')return '資料不足｜須確認原發性高膽固醇血症或 HoFH 等規定適應症。';
   if(r.current?.ezetimibe||s.addEze==='yes')return '療程不可直接採計｜目前不是 statin 單方療程，需檢視既往治療。';
   if(!r.current?.statin||r.responseDays===null)return '資料不足｜須確認 statin 單方治療與追蹤檢驗紀錄。';
-  if(d.payment==='combo3m')return r.months3?'已達 3 個月觀察期｜仍需療效紀錄、健保碼與完整給付核對。':'尚未達指定品項 3 個月 statin 單方療程｜臨床適用與給付分開評估。';
-  return r.responseDays>=56?'本次檢驗已達 6–8 週觀察期｜仍需療效紀錄、健保碼與完整給付核對。':r.responseDays>=42?'本次檢驗處於 6–8 週區間｜療效與可採計療程需人工確認。':'本次檢驗尚未達一般 6–8 週 statin 單方療程。';
+  if(d.payment==='combo3m')return r.months3?`療程符合：開始日 ${s.since} 至抽血日 ${s.labDate}，已超過 3 個曆月。`:'療程未符合：開始日至抽血日須超過 3 個曆月，不列入建議。';
+  return r.responseDays>42?`療程符合：開始日 ${s.since} 至抽血日 ${s.labDate}，共 ${r.responseDays} 天，已超過 6 週。`:'療程未符合：開始日至抽血日須超過 6 週（42 天），不列入建議。';
  }
  return '獨立適應症／給付條件待核對。';
 }
