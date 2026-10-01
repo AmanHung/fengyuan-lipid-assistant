@@ -16,3 +16,5 @@
 
 .tolerance-choice .tri input:checked+span{background:#d8f0e8;color:#13634b;box-shadow:inset 0 0 0 1px #8bcbb6;font-weight:700}
 @media(max-width:760px){.tri label span{min-height:44px;display:flex;align-items:center;justify-content:center}.tri-row{gap:10px}.field input,.field select{font-size:16px;min-height:48px}.tolerance-choice .tri label span{min-height:54px;font-size:14px}.tri input:focus-visible+span{outline-offset:2px}.form-footer .primary,.form-footer .secondary{min-height:48px}}
+
+.drug-link{color:var(--ink);text-decoration:underline;text-underline-offset:4px}.drug-link:hover{color:#0b7187}.drug-link:focus-visible{outline:2px solid #0b7187;outline-offset:4px}.hospital-code{display:block;font-size:13px;font-weight:600;color:#496879;margin-top:6px}

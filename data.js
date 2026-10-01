@@ -17,30 +17,30 @@ const riskFields=[
 const advancedFields=[['recentMI','CAD 合併一年內心肌梗塞','須同時確認 CAD；時間以事件發生日計。'],['multipleMI','CAD 合併至少兩次心肌梗塞','須同時確認 CAD；不是重複登錄同一次事件。'],['multivessel','CAD 合併多支冠狀動脈阻塞','須同時確認 CAD。']];
 const rfFields=[['hypertension','高血壓','依已確認的診斷或病史。'],['family','早發性冠心病家族史','男性親屬 ≤55 歲、女性親屬 ≤65 歲；親屬範圍待院內核定。'],['smoking','目前抽菸','戒菸史可另於病歷註記。']];
 const safetyFields=[['dialysis','目前接受透析','透析者先確認起始／續用適應症；仍可查看各品項肝腎檢核。'],['pregnancy','懷孕、備孕或哺乳','需個別評估，原型不提供具體藥品選擇。'],['liver','活動性肝病或不明原因轉胺酶持續升高','與單次 AST／ALT 升高不同；符合時排除含 statin 製劑，其他品項逐項判斷。']];
-// IDs are prototype identifiers, NOT hospital order codes. Unknown codes remain blank.
+// Prototype IDs stay separate from hospital codes verified in the electronic formulary on 2026-10-01.
 const drugs=[
- {id:'atotin10',brand:'Atotin',strength:'10 mg',ingredients:'Atorvastatin 10 mg',statin:'atorvastatin',dose:10,group:'statin',intensity:'moderate',payment:'legacy'},
- {id:'atotin20',brand:'Atotin',strength:'20 mg',ingredients:'Atorvastatin 20 mg',statin:'atorvastatin',dose:20,group:'statin',intensity:'moderate',payment:'legacy'},
- {id:'zulitor4',brand:'Zulitor',strength:'4 mg',ingredients:'Pitavastatin 4 mg',statin:'pitavastatin',dose:4,group:'statin',intensity:'moderate',payment:'table1'},
- {id:'pitarty4',brand:'Pitarty',strength:'4 mg',ingredients:'Pitavastatin 4 mg',statin:'pitavastatin',dose:4,group:'statin',intensity:'moderate',payment:'legacy'},
- {id:'livalo2',brand:'Livalo',strength:'2 mg',ingredients:'Pitavastatin 2 mg',statin:'pitavastatin',dose:2,group:'statin',intensity:'moderate',payment:'legacy'},
- {id:'crestor10',brand:'Crestor',strength:'10 mg',ingredients:'Rosuvastatin 10 mg',statin:'rosuvastatin',dose:10,group:'statin',intensity:'moderate',payment:'table1'},
- {id:'aladdin10',brand:'Aladdin',strength:'10 mg',ingredients:'Rosuvastatin 10 mg',statin:'rosuvastatin',dose:10,group:'statin',intensity:'moderate',payment:'legacy'},
- {id:'rozinin20',brand:'Rozinin',strength:'20 mg',ingredients:'Rosuvastatin 20 mg',statin:'rosuvastatin',dose:20,group:'statin',intensity:'high',payment:'table1'},
- {id:'fenolip160',brand:'Fenolip-U',strength:'160 mg',ingredients:'Fenofibrate 160 mg',group:'tg',payment:'separate'},
- {id:'choles',brand:'Choles powder',strength:'規格待確認',ingredients:'Cholestyramine resin',group:'other',payment:'separate',availability:'inactive'},
- {id:'nilemdo180',brand:'Nilemdo',strength:'180 mg',ingredients:'Bempedoic acid 180 mg',group:'advanced',payment:'self'},
- {id:'repatha140',brand:'Repatha',strength:'140 mg',ingredients:'Evolocumab 140 mg',group:'advanced',payment:'review'},
- {id:'leqvio284',brand:'Leqvio',strength:'284 mg / 1.5 mL',ingredients:'Inclisiran 284 mg',group:'advanced',payment:'self'},
- {id:'omacor1000',brand:'Omacor',strength:'1,000 mg',ingredients:'Omega-3-acid ethyl esters 90 1,000 mg',group:'tg',payment:'self'},
- {id:'zoliton1010',brand:'Zoliton',strength:'10 / 10 mg',ingredients:'Ezetimibe 10 mg／Atorvastatin 10 mg',statin:'atorvastatin',dose:10,ezetimibe:true,group:'combo',intensity:'moderate',payment:'combo3m'},
- {id:'atozet1020',brand:'Atozet',strength:'10 / 20 mg',ingredients:'Ezetimibe 10 mg／Atorvastatin 20 mg',statin:'atorvastatin',dose:20,ezetimibe:true,group:'combo',intensity:'moderate',payment:'combo8w',specialist:true},
- {id:'zoliton1020',brand:'Zoliton',strength:'10 / 20 mg',ingredients:'Ezetimibe 10 mg／Atorvastatin 20 mg',statin:'atorvastatin',dose:20,ezetimibe:true,group:'combo',intensity:'moderate',payment:'combo3m'},
- {id:'cretrol1020',brand:'Cretrol',strength:'10 / 20 mg',ingredients:'Ezetimibe 10 mg／Rosuvastatin 20 mg',statin:'rosuvastatin',dose:20,ezetimibe:true,group:'combo',intensity:'high',payment:'combo3m',specialist:true},
- {id:'pravafen',brand:'Pravafen',strength:'160 / 40 mg',ingredients:'Fenofibrate 160 mg／Pravastatin 40 mg',statin:'pravastatin',dose:40,group:'othercombo',intensity:'moderate',payment:'legacy'},
- {id:'tonvasca210',brand:'Tonvasca',strength:'2 / 10 mg',ingredients:'Pitavastatin 2 mg／Ezetimibe 10 mg',statin:'pitavastatin',dose:2,ezetimibe:true,group:'combo',intensity:'moderate',payment:'combo8w'},
- {id:'livazebe410',brand:'Livazebe',strength:'4 / 10 mg',ingredients:'Pitavastatin 4 mg／Ezetimibe 10 mg',statin:'pitavastatin',dose:4,ezetimibe:true,group:'combo',intensity:'moderate',payment:'combo3m'},
- {id:'caduet510',brand:'Caduet',strength:'5 / 10 mg',ingredients:'Amlodipine 5 mg／Atorvastatin 10 mg',statin:'atorvastatin',dose:10,group:'othercombo',intensity:'moderate',payment:'legacy'}
+ {id:'atotin10',hospitalCode:'ATOO27',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=ATOO27',brand:'Atotin',strength:'10 mg',ingredients:'Atorvastatin 10 mg',statin:'atorvastatin',dose:10,group:'statin',intensity:'moderate',payment:'legacy'},
+ {id:'atotin20',hospitalCode:'ATOO47',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=ATOO47',brand:'Atotin',strength:'20 mg',ingredients:'Atorvastatin 20 mg',statin:'atorvastatin',dose:20,group:'statin',intensity:'moderate',payment:'legacy'},
+ {id:'zulitor4',hospitalCode:'PITO03',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=PITO03',brand:'Zulitor',strength:'4 mg',ingredients:'Pitavastatin 4 mg',statin:'pitavastatin',dose:4,group:'statin',intensity:'moderate',payment:'table1'},
+ {id:'pitarty4',hospitalCode:'PITO07',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=PITO07',brand:'Pitarty',strength:'4 mg',ingredients:'Pitavastatin 4 mg',statin:'pitavastatin',dose:4,group:'statin',intensity:'moderate',payment:'legacy'},
+ {id:'livalo2',hospitalCode:'PITO00',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=PITO00',brand:'Livalo',strength:'2 mg',ingredients:'Pitavastatin 2 mg',statin:'pitavastatin',dose:2,group:'statin',intensity:'moderate',payment:'legacy'},
+ {id:'crestor10',hospitalCode:'ROSO00',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=ROSO00',brand:'Crestor',strength:'10 mg',ingredients:'Rosuvastatin 10 mg',statin:'rosuvastatin',dose:10,group:'statin',intensity:'moderate',payment:'table1'},
+ {id:'aladdin10',hospitalCode:'ROSO24',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=ROSO24',brand:'Aladdin',strength:'10 mg',ingredients:'Rosuvastatin 10 mg',statin:'rosuvastatin',dose:10,group:'statin',intensity:'moderate',payment:'legacy'},
+ {id:'rozinin20',hospitalCode:'ROSO19',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=ROSO19',brand:'Rozinin',strength:'20 mg',ingredients:'Rosuvastatin 20 mg',statin:'rosuvastatin',dose:20,group:'statin',intensity:'high',payment:'table1'},
+ {id:'fenolip160',hospitalCode:'FENO05',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=FENO05',brand:'Fenolip-U',strength:'160 mg',ingredients:'Fenofibrate 160 mg',group:'tg',payment:'separate'},
+ {id:'choles',hospitalCode:'CHOO90',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=CHOO90',brand:'Choles powder',strength:'規格待確認',ingredients:'Cholestyramine resin',group:'other',payment:'separate',availability:'inactive'},
+ {id:'nilemdo180',hospitalCode:'BEMO99',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=BEMO99',brand:'Nilemdo',strength:'180 mg',ingredients:'Bempedoic acid 180 mg',group:'advanced',payment:'self'},
+ {id:'repatha140',hospitalCode:'EVOI00',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=EVOI00',brand:'Repatha',strength:'140 mg',ingredients:'Evolocumab 140 mg',group:'advanced',payment:'review'},
+ {id:'leqvio284',hospitalCode:'INCI99',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=INCI99',brand:'Leqvio',strength:'284 mg / 1.5 mL',ingredients:'Inclisiran 284 mg',group:'advanced',payment:'self'},
+ {id:'omacor1000',hospitalCode:'OMAO00',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=OMAO00',brand:'Omacor',strength:'1,000 mg',ingredients:'Omega-3-acid ethyl esters 90 1,000 mg',group:'tg',payment:'self'},
+ {id:'zoliton1010',hospitalCode:'ZOLO99',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=ZOLO99',brand:'Zoliton',strength:'10 / 10 mg',ingredients:'Ezetimibe 10 mg／Atorvastatin 10 mg',statin:'atorvastatin',dose:10,ezetimibe:true,group:'combo',intensity:'moderate',payment:'combo3m'},
+ {id:'atozet1020',hospitalCode:'ATOO49',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=ATOO49',brand:'Atozet',strength:'10 / 20 mg',ingredients:'Ezetimibe 10 mg／Atorvastatin 20 mg',statin:'atorvastatin',dose:20,ezetimibe:true,group:'combo',intensity:'moderate',payment:'combo8w',specialist:true},
+ {id:'zoliton1020',hospitalCode:'ZOLO98',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=ZOLO98',brand:'Zoliton',strength:'10 / 20 mg',ingredients:'Ezetimibe 10 mg／Atorvastatin 20 mg',statin:'atorvastatin',dose:20,ezetimibe:true,group:'combo',intensity:'moderate',payment:'combo3m'},
+ {id:'cretrol1020',hospitalCode:'CREO02',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=CREO02',brand:'Cretrol',strength:'10 / 20 mg',ingredients:'Ezetimibe 10 mg／Rosuvastatin 20 mg',statin:'rosuvastatin',dose:20,ezetimibe:true,group:'combo',intensity:'high',payment:'combo3m',specialist:true},
+ {id:'pravafen',hospitalCode:'FEPO00',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=FEPO00',brand:'Pravafen',strength:'160 / 40 mg',ingredients:'Fenofibrate 160 mg／Pravastatin 40 mg',statin:'pravastatin',dose:40,group:'othercombo',intensity:'moderate',payment:'legacy'},
+ {id:'tonvasca210',hospitalCode:'TONO03',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=TONO03',brand:'Tonvasca',strength:'2 / 10 mg',ingredients:'Pitavastatin 2 mg／Ezetimibe 10 mg',statin:'pitavastatin',dose:2,ezetimibe:true,group:'combo',intensity:'moderate',payment:'combo8w'},
+ {id:'livazebe410',hospitalCode:'LIVO99',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=LIVO99',brand:'Livazebe',strength:'4 / 10 mg',ingredients:'Pitavastatin 4 mg／Ezetimibe 10 mg',statin:'pitavastatin',dose:4,ezetimibe:true,group:'combo',intensity:'moderate',payment:'combo3m'},
+ {id:'caduet510',hospitalCode:'CADO00',formularyUrl:'https://amanhung.github.io/hospital-drug-search/?code=CADO00',brand:'Caduet',strength:'5 / 10 mg',ingredients:'Amlodipine 5 mg／Atorvastatin 10 mg',statin:'atorvastatin',dose:10,group:'othercombo',intensity:'moderate',payment:'legacy'}
 ].map(d=>({availability:'active',specialist:false,hospitalCode:'',nhiCode:'',note:'',...d}));
 const rules=[
  ['R01','最高風險優先，未知資料不當作否','由極高、非常高、高風險到一般因子逐步判斷。當已確認等級與所有未知條件可能形成的最高等級一致時，停止追問；略過的答案保留不清楚。只有足以排除更高分層時，才確認低／零風險。','HIS 需求單、健保 2.6.1；三態與提早停止為原型設計'],
