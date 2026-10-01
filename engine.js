@@ -88,10 +88,10 @@ function requiredFields(s,drugs=D.drugs){
  if(s.liverScreen!==undefined){keys.push('liverScreen');if(s.liverScreen!=='yes')for(const k of ['liver','hepatic','enzymes']){const i=keys.indexOf(k);if(i>=0)keys.splice(i,1);}}
  if(s.dialysis!=='no'){const i=keys.indexOf('egfr');if(i>=0)keys.splice(i,1);}
  const current=drugs.find(d=>d.id===s.drug),risk=classify(s),q=nextRisk(s);
- if(s.mode==='treated'){keys.push('drug','since','adherence');if(current?.statin)keys.push('dose');if(!current?.ezetimibe)keys.push('addEze');}
- if(s.mode==='treated'&&current?.statin==='rosuvastatin'&&s.dialysis==='no')keys.push('clcr');
- if(s.mode==='treated'&&current?.id==='pravafen'&&s.dialysis==='no')keys.push('crcl');
- if(s.mode==='treated'&&current?.id==='fenolip160'&&s.dialysis==='no')keys.push('fenoCrcl');
+ if(s.mode==='treated'){keys.push('drug','since');if(!s.simplifiedTreatment)keys.push('adherence');if(current?.statin)keys.push('dose');if(!s.simplifiedTreatment&&!current?.ezetimibe)keys.push('addEze');}if(s.simplifiedTreatment)keys.splice(keys.indexOf('gemfibrozil'),1);
+ if(s.mode==='treated'&&current?.statin==='rosuvastatin'&&O.renalQuestion(current,s)==='clcr')keys.push('clcr');
+ if(s.mode==='treated'&&current?.id==='pravafen'&&O.renalQuestion(current,s)==='crcl')keys.push('crcl');
+ if(s.mode==='treated'&&current?.id==='fenolip160'&&O.renalQuestion(current,s)==='fenoCrcl')keys.push('fenoCrcl');
  if(['none','lifestyle'].includes(s.mode)&&risk.rank<=2)keys.push('lifestyleMonths');
  if(!q.done){keys.push(...q.keys);if(q.lower){if(risk.rf[4]===null)keys.push('hdl');if(risk.rf[5]===null){keys.push('metabolicPeriod');const groups=[['waist'],['sbp','dbp','bpMeds'],['glucose','glucoseMeds'],['tg','tgMeds'],['hdl']];risk.metabolic.values.forEach((v,i)=>{if(v===null)keys.push(...groups[i]);});}}}
  return [...new Set(keys)];
@@ -126,19 +126,19 @@ function evaluate(s,drugs=D.drugs,now=new Date()){
   if(current?.statin&&!s.dose)missing.push('目前每日 statin 劑量');
   if(currentIntensity==='invalid')errors.push('dose');
   if(!s.since)missing.push('目前治療開始日期');
-  if(s.adherence==='unknown')missing.push('服藥遵從性');
-  if(s.addEze==='unknown'&&!current?.ezetimibe)missing.push('是否另用 ezetimibe');
+  if(!s.simplifiedTreatment&&(s.adherence==='unknown'))missing.push('服藥遵從性');
+  if(!s.simplifiedTreatment&&(s.addEze==='unknown'&&!current?.ezetimibe))missing.push('是否另用 ezetimibe');
  }
  if(!s.tolerance||s.tolerance==='unknown')missing.push('Statin 耐受情況');
- if(s.gemfibrozil==='unknown')missing.push('Gemfibrozil 併用情況');
+ if(!s.simplifiedTreatment&&(s.gemfibrozil==='unknown'))missing.push('Gemfibrozil 併用情況');
  const renal=threshold(s.egfr,60);
  if(s.dialysis==='no'&&renal===null)missing.push('近期 eGFR（用於選藥前檢核）');
  if(renal===false)warnings.push(`eGFR ${displayValue(toRange('egfr',s.egfr))}：已逐品項檢查肝腎限制；不是所有藥物的禁忌或共同減量門檻。`);
  D.safetyFields.forEach(([k,label])=>{if(k==='liver'&&s.liverScreen!==undefined&&s.liverScreen!=='yes')return;if(s[k]==='yes'&&k!=='liver')stops.push(k==='dialysis'?'目前接受透析：先確認起始／續用治療適應症，不自動新增降血脂藥；肝腎品項檢核仍可查看。':label);else if(!['yes','no'].includes(s[k]))missing.push(label+'尚未確認');});
  if(s.liverScreen===undefined||s.liverScreen==='yes'){if(!s.hepatic)missing.push('肝功能不全程度');if(!s.enzymes)missing.push('AST／ALT 範圍');}
- if(current?.statin==='rosuvastatin'&&s.dialysis==='no'&&!s.clcr)missing.push('目前 rosuvastatin 劑量所需的 CLcr');
- if(current?.id==='pravafen'&&s.dialysis==='no'&&!s.crcl)missing.push('目前 Pravafen 所需的 CrCl');
- if(current?.id==='fenolip160'&&s.dialysis==='no'&&!s.fenoCrcl)missing.push('目前 Fenolip-U 所需的肌酸酐清除率');
+ if(current?.statin==='rosuvastatin'&&O.renalQuestion(current,s)==='clcr'&&!s.clcr)missing.push('目前 rosuvastatin 劑量所需的 CLcr');
+ if(current?.id==='pravafen'&&O.renalQuestion(current,s)==='crcl'&&!s.crcl)missing.push('目前 Pravafen 所需的 CrCl');
+ if(current?.id==='fenolip160'&&O.renalQuestion(current,s)==='fenoCrcl'&&!s.fenoCrcl)missing.push('目前 Fenolip-U 所需的肌酸酐清除率');
  if(threshold(s.age,18)===false)stops.push('未滿 18 歲不適用本版成人流程');
  if(threshold(s.tg,500)===true)stops.push('TG ≥500 mg/dL：需另行評估高三酸甘油脂及胰臟炎風險');
  if(threshold(s.tg,1000)===true)warnings.push('TG ≥1,000 mg/dL，應優先安排臨床評估；若有急性症狀需即時處置。');
@@ -146,10 +146,10 @@ function evaluate(s,drugs=D.drugs,now=new Date()){
  if(ageDays>365)stops.push('血脂檢驗超過 1 年，請先更新檢驗');
  else if(ageDays>183)warnings.push('血脂檢驗超過 6 個月，建議重新檢測後確認治療。');
  if(s.ckd==='yes'&&s.dialysis==='yes')warnings.push('CKD 透析前條件與目前透析狀態矛盾，已排除該分層依據。');
- if(s.gemfibrozil==='yes')stops.push('Gemfibrozil 與 statin 併用會增加肌病／橫紋肌溶解及急性腎損傷風險：應避免／不建議併用。Rosuvastatin 若不得已併用，起始 5 mg、最高 10 mg／日，仍需個別評估。本原型暫停自動列藥，請檢視目前用藥及各品項交互作用。');
+ if(!s.simplifiedTreatment&&(s.gemfibrozil==='yes'))stops.push('Gemfibrozil 與 statin 併用會增加肌病／橫紋肌溶解及急性腎損傷風險：應避免／不建議併用。Rosuvastatin 若不得已併用，起始 5 mg、最高 10 mg／日，仍需個別評估。本原型暫停自動列藥，請檢視目前用藥及各品項交互作用。');
  if(s.tolerance==='none'&&current?.statin)warnings.push('完全不耐受與目前含 statin 處方不一致，請先確認目前治療。');
  if(s.mode==='treated'&&current&&['tg','other','othercombo'].includes(current.group))stops.push('目前為 TG 用藥或其他複方，需檢視所有成分與原適應症');
- if(s.mode==='treated'&&current?.statin&&!current.ezetimibe&&s.addEze==='no'&&s.primaryHyper!=='yes')warnings.push(s.primaryHyper==='no'?'未符合 ezetimibe 複方的規定適應症，不列含 ezetimibe 複方。':'請確認「符合 ezetimibe 複方的規定適應症」；未確認前不列含 ezetimibe 複方。');
+ if(!s.simplifiedTreatment&&s.mode==='treated'&&current?.statin&&!current.ezetimibe&&s.addEze==='no'&&s.primaryHyper!=='yes')warnings.push(s.primaryHyper==='no'?'未符合 ezetimibe 複方的規定適應症，不列含 ezetimibe 複方。':'請確認「符合 ezetimibe 複方的規定適應症」；未確認前不列含 ezetimibe 複方。');
  const risk={...low,...levels[low.rank],upperRank:high.rank,upperName:levels[high.rank].name,provisional:low.rank!==high.rank};
  const achieved=ldl===null||risk.provisional?null:ldl<risk.target;
  const since=day(s.since),days=since?diffDays(since,now):null;
@@ -163,17 +163,17 @@ function evaluate(s,drugs=D.drugs,now=new Date()){
   if(risk.rank<=2&&threshold(s.lifestyleMonths,3)!==true){action='lifestyle';title='先落實生活型態與風險因子管理';description='依本版院內流程，低／中風險及零項因子者先評估 3–6 個月生活型態介入。尚未完成時不列初始藥品。';followup='3–6 個月後複查血脂；特殊適應症另作個別判斷。';}
   else {action='initiate';title=risk.rank>=3?'評估起始中至高強度 statin':'評估起始中強度 statin';description='依基線 LDL-C、臨床狀況及耐受性選擇強度。高風險以上可評估合併治療，但給付需逐品項確認。';followup='起始治療後 6–8 週評估血脂與服藥情況。';}
  } else if(s.mode==='treated'){
-  if(s.adherence==='no'){action='adherence';title='先釐清服藥中斷或漏服';description='確認服藥方式、可近性與不良反應後再判斷療效，不能直接當成治療失敗。';}
+  if(!s.simplifiedTreatment&&(s.adherence==='no')){action='adherence';title='先釐清服藥中斷或漏服';description='確認服藥方式、可近性與不良反應後再判斷療效，不能直接當成治療失敗。';}
   else if(responseDays!==null&&responseDays<42){action='observe';title='本次檢驗時療程尚短，需追蹤後再評估';description='本次抽血距目前方案起始未滿 6 週，不因今天已經過更久就把舊數值當成治療失敗。高風險個案仍由臨床判斷是否提前調整。';followup='安排治療起始後 6–8 週複查。';}
   else {action='intensify';title='尚未達標，評估調整強度或合併治療';description='確認遵從性、可耐受劑量與次發原因，再評估高強度 statin、含 ezetimibe 方案或進階治療。';followup='更動治療後 1–3 個月追蹤；實際依藥品與病況調整。';}
  }
  }
  if(s.tolerance==='none'&&achieved===false&&action!=='lifestyle'){action='nonstatin';title='Statin 完全不耐受，需個別評估 non-statin';description='不列含 statin 的複方。先核對不耐受紀錄與可選替代方案；原型僅列進一步討論品項。';}
  if(s.liver==='yes'&&achieved===false&&!['lifestyle','observe','adherence'].includes(action)){action='nonstatin';title='活動性肝病：排除含 statin 製劑，逐項評估替代治療';description='非 statin 也需檢查肝病程度與使用資料，不能直接視為適用。';}
- const organChecks=drugs.map(d=>({...d,organ:O.check(d,s,{initial:s.mode!=='treated',dose:d.id===current?.id&&d.statin?number(s.dose):d.dose})}));
+ const organChecks=drugs.map(d=>({...d,organ:O.check(d,s.simplifiedTreatment?{...s,gemfibrozil:'unknown'}:s,{initial:s.mode!=='treated',dose:d.id===current?.id&&d.statin?number(s.dose):d.dose})}));
  const currentOrgan=organChecks.find(d=>d.id===current?.id)?.organ||null;
- const renalDoseLimited=currentOrgan?.eligible&&((current?.statin==='rosuvastatin'&&s.clcr==='below30'&&number(s.dose)>=10)||(current?.statin==='pitavastatin'&&['30to59','15to29'].includes(O.egfrBand(s.egfr))&&number(s.dose)>=2));
- if(renalDoseLimited&&action==='intensify'){description='目前 statin 已達此腎功能分組的仿單上限，不直接提高劑量。核對 ezetimibe 的可用規格，再評估進階降 LDL-C 治療與個別適應症。';}
+ const renalDoseLimited=currentOrgan?.eligible&&((current?.statin==='rosuvastatin'&&(s.clcr==='below30'||O.severeRenalScreen(s))&&number(s.dose)>=10)||(current?.statin==='pitavastatin'&&['30to59','15to29'].includes(O.egfrBand(s.egfr))&&number(s.dose)>=2));
+ if(renalDoseLimited&&action==='intensify'){description='目前 statin 已達本版腎功能篩選的劑量上限，不直接提高劑量。核對 ezetimibe 的可用規格，再評估進階降 LDL-C 治療與個別適應症。';}
  if(currentOrgan&&!currentOrgan.eligible){
   warnings.push(`目前 ${current.brand}：${currentOrgan.label}。${currentOrgan.notes.join('；')}`);
   if(achieved===true){action='review';title='血脂已達標，但目前處方的肝腎限制需先處理';description='不直接建議維持此處方；請依下方目前用藥檢核確認劑量與是否適用。';}
@@ -189,19 +189,19 @@ function evaluate(s,drugs=D.drugs,now=new Date()){
   if(action==='nonstatin')return d.group==='advanced';
   if(d.group==='statin'){
    if(s.tolerance==='partial')return false;
-   if(action==='intensify'&&(currentIntensity==='high'||s.maxTolerated==='yes'))return false;
+   if(action==='intensify'&&(currentIntensity==='high'||(!s.simplifiedTreatment&&s.maxTolerated==='yes')))return false;
    return d.id!==current?.id&&(action!=='intensify'?risk.rank>=3||d.intensity==='moderate':d.intensity==='high');
   }
   if(d.group==='combo'){
    if(action==='initiate')return false;
    if(d.payment==='combo8w'&&!(responseDays>42))return false;
    if(d.payment==='combo3m'&&!months3)return false;
-   if(s.primaryHyper!=='yes')return false;
+   if(!s.simplifiedTreatment&&(s.primaryHyper!=='yes'))return false;
    if(!current?.statin)return false;
-   if(current?.ezetimibe||s.addEze==='yes')return false;
+   if(!s.simplifiedTreatment&&(current?.ezetimibe||s.addEze==='yes'))return false;
    return true;
   }
-  return d.group==='advanced'&&action==='intensify'&&(currentIntensity==='high'||s.maxTolerated==='yes'||s.tolerance==='partial'||renalDoseLimited);
+  return d.group==='advanced'&&action==='intensify'&&(currentIntensity==='high'||(!s.simplifiedTreatment&&s.maxTolerated==='yes')||s.tolerance==='partial'||renalDoseLimited);
  }).sort((a,b)=>{const score=d=>(d.group==='statin'?0:d.group==='combo'?2:4)+(d.payment==='legacy'?1:0);return score(a)-score(b);});
  }
  const result={risk,ldl,achieved,errors:[...new Set(errors)],missing,warnings,stops,action,title,description,followup,candidates,current,currentOrgan,organChecks,currentIntensity,days,responseDays,months3,canRecommend,ageDays,baselineReduction:number(s.baseline)&&ldl!==null?(1-ldl/number(s.baseline))*100:null,nonHDL:number(s.tc)!==null&&number(s.hdl)!==null?number(s.tc)-number(s.hdl):null};
@@ -214,9 +214,9 @@ function coverage(d,s,r){
  if(d.payment==='legacy')return '原給付規定｜表二檢核尚未建置，不套用表一門檻。';
  if(d.payment==='table1')return '新制表一候選｜需求單歸類；院內碼／健保碼及完整起始或續用條件仍待核對。';
  if(d.payment.startsWith('combo')){
-  if(s.gemfibrozil==='yes')return '不符合併用條件｜不得與 gemfibrozil 併用。';
-  if(s.primaryHyper!=='yes')return '資料不足｜須確認原發性高膽固醇血症或 HoFH 等規定適應症。';
-  if(r.current?.ezetimibe||s.addEze==='yes')return '療程不可直接採計｜目前不是 statin 單方療程，需檢視既往治療。';
+  if(!s.simplifiedTreatment&&(s.gemfibrozil==='yes'))return '不符合併用條件｜不得與 gemfibrozil 併用。';
+  if(!s.simplifiedTreatment&&(s.primaryHyper!=='yes'))return '資料不足｜須確認原發性高膽固醇血症或 HoFH 等規定適應症。';
+  if(!s.simplifiedTreatment&&(r.current?.ezetimibe||s.addEze==='yes'))return '療程不可直接採計｜目前不是 statin 單方療程，需檢視既往治療。';
   if(!r.current?.statin||r.responseDays===null)return '資料不足｜須確認 statin 單方治療與追蹤檢驗紀錄。';
   if(d.payment==='combo3m')return r.months3?`療程符合：開始日 ${s.since} 至抽血日 ${s.labDate}，已超過 3 個曆月。`:'療程未符合：開始日至抽血日須超過 3 個曆月，不列入建議。';
   return r.responseDays>42?`療程符合：開始日 ${s.since} 至抽血日 ${s.labDate}，共 ${r.responseDays} 天，已超過 6 週。`:'療程未符合：開始日至抽血日須超過 6 週（42 天），不列入建議。';

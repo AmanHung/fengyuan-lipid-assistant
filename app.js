@@ -2,7 +2,7 @@
 'use strict';
 const D=LipidData,E=LipidEngine,$=id=>document.getElementById(id);
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let state={...E.blank(),liverScreen:'unknown'},step=0,result,submitted=false,selected='',showAll=false,overrides={},catalogQuery='',catalogGroup='all';
+let state={...E.blank(),liverScreen:'unknown',simplifiedTreatment:true},step=0,result,submitted=false,selected='',showAll=false,overrides={},catalogQuery='',catalogGroup='all';
 const storageKey='fengyuan-lipid-formulary-draft-v1';
 try{const v=JSON.parse(localStorage.getItem(storageKey)||'{}');if(v&&typeof v==='object'&&!Array.isArray(v))for(const d of D.drugs){const x=v[d.id];if(x&&['active','shortage','inactive'].includes(x.availability)&&typeof x.specialist==='boolean'&&typeof x.note==='string')overrides[d.id]={availability:x.availability,specialist:x.specialist,note:x.note.slice(0,300)};}}catch{}
 const drugs=()=>D.drugs.map(d=>({...d,...overrides[d.id]}));
@@ -18,7 +18,7 @@ function renderForm(){
 
  const drugOpts=[['','請選擇院內藥品'],...D.drugs.filter(d=>d.availability!=='inactive').map(d=>[d.id,`${d.brand} ${d.strength}`]),['other','其他或多重組合：需個別評估']];
  $('treatment-fields').innerHTML=select('mode','目前治療狀況',[['','請選擇'],['none','尚未接受降血脂藥物治療'],['lifestyle','生活型態介入中'],['treated','目前使用降血脂藥物']],'full')+select('drug','目前藥品',drugOpts,'full')+unit('dose','每日 statin 成分劑量','mg','複方只填 statin 含量；不等於錠數。')+unit('since','目前方案開始日期','','調整藥品／劑量後，填新方案起始日。','date')+`<div id="current-note" class="current-note"></div>`+unit('lifestyleMonths','生活型態介入時間','個月','低／中風險及零項因子者評估 3–6 個月。')+select('tolerance','Statin 耐受性',[['','請選擇'],['full','無已知不耐受／尚未使用'],['partial','部分不耐受'],['none','已確認完全不耐受']]);
- $('treatment-tris').innerHTML=[['adherence','目前服藥遵從性良好','漏服或中斷時，先釐清原因。'],['maxTolerated','已達最大可耐受 statin 劑量','與高強度不同，由臨床確認。'],['addEze','目前另使用 ezetimibe 單方','複方成分會自動辨識；有併用時不可計為單方療程。'],['gemfibrozil','目前併用 gemfibrozil','與 statin 併用會增加肌病／橫紋肌溶解風險；rosuvastatin 另有劑量上限。選「是」後顯示各品項的交互作用限制。'],['primaryHyper','符合 ezetimibe 複方的規定適應症','已確認原發性高膽固醇血症或同型接合子家族性高膽固醇血症（HoFH）。']].map(tri).join('');
+ $('treatment-tris').innerHTML='';
 }
 function syncForm(){
  for(const [k,v] of Object.entries(state)){const els=document.getElementsByName(k);for(const el of els){if(el.type==='radio')el.checked=el.value===v;else {if(E.ranges[k])state[k]=E.toRange(k,v);el.value=state[k];}}}
@@ -29,13 +29,13 @@ function conditional(){
  $('liver-details').hidden=state.liverScreen!=='yes';
  $('liver-screen-hint').textContent=state.liverScreen==='no'?'已確認無上述肝病、肝功能不全及肝指數異常，省略細項。若有新資料，請改選「是」。':state.liverScreen==='yes'?'請補充下方資料；已知肝病不一定代表活動性肝病或肝功能不全。':'肝功能狀態待確認，不視為正常；確認後再列可討論品項。';
  const on=state.mode==='treated';for(const id of ['drug','dose','since'])$(id).closest('.field').hidden=!on;
- for(const id of ['adherence','maxTolerated','addEze'])document.querySelector(`[name="${id}"]`).closest('.tri-row').hidden=!on;
+ for(const id of ['adherence','maxTolerated','addEze'])document.querySelector(`[name="${id}"]`)?.closest('.tri-row')?.toggleAttribute('hidden',!on);
  const current=D.drugs.find(d=>d.id===state.drug);$('dose').closest('.field').hidden=!on||!current?.statin;
  $('current-note').hidden=!on||!current;
  if(current){$('current-note').textContent=current.ingredients+(current.ezetimibe?'。已含 ezetimibe，勿重複加用。':'。請核對實際每日劑量。');}
  $('lifestyleMonths').closest('.field').hidden=on||E.classify(state).rank>=3;
- document.querySelector('[name=primaryHyper]').closest('.tri-row').hidden=!on;
- document.querySelector('[name=addEze]').closest('.tri-row').hidden=!on||!!current?.ezetimibe;
+ document.querySelector('[name=primaryHyper]')?.closest('.tri-row')?.toggleAttribute('hidden',!on);
+ document.querySelector('[name=addEze]')?.closest('.tri-row')?.toggleAttribute('hidden',!on||!!current?.ezetimibe);
 }
 function renderTree(){
  const r=result.risk;
@@ -118,7 +118,7 @@ function renderResult(){
  if(!r.canRecommend&&!r.stops.length&&!r.errors.length)details='目前僅顯示初步方向。補齊下方資料後才提供具體藥品候選，避免依不完整資訊選藥。';
  $('results').innerHTML=`<div class="result-hero"><div class="result-topline"><span>評估摘要</span><span class="risk-badge">${!hasRisk?'尚未填寫':r.risk.provisional?'待補資料':'依已填資料分層'}</span></div><h2>${riskName}</h2><p class="result-reason">${hasRisk?escape(r.risk.reasons.join('、')):'選擇已確認的疾病，即可開始逐步分級。'}${hasRisk&&r.risk.provisional?`<br>未知條件可能提高至${r.risk.upperName}。`:''}</p><div class="metric-grid"><div><span class="metric-label">目前 LDL-C</span><strong class="metric-number">${current}<small>mg/dL</small></strong></div><div><span class="metric-label">治療目標</span><strong class="metric-number metric-target">${target}<small>mg/dL</small></strong></div></div><div class="progress-track" aria-hidden="true"><div class="progress-fill" style="width:${percent}%"></div></div><div class="hero-foot"><span>${status}</span><span>${state.labDate?escape(state.labDate):'未填檢驗日'}</span></div>${r.baselineReduction!==null&&!r.errors.length?`<div class="hero-foot"><span>相對治療前下降 ${r.baselineReduction.toFixed(1)}%（不等於已符合所有治療目標）</span></div>`:''}</div>
  <div class="card"><div class="card-title"><h2>下一步治療方向</h2><span class="step-tag">臨床建議</span></div><h3 class="action-title">${!hasRisk?'先完成風險分級':escape(r.title)}</h3><p class="body-copy">${escape(details)}</p>${r.errors.length?`<div class="notice danger">請修正：${r.errors.map(k=>fieldNames[k]||k).join('、')}。日期不得在未來，血脂等數值須大於零，總膽固醇不得小於 HDL-C。</div>`:''}${r.stops.length?`<div class="notice danger">${r.stops.map(escape).join('<br>')}</div>`:''}${r.warnings.map(w=>`<div class="notice">${escape(w)}</div>`).join('')}${safetyUnknown&&!r.errors.length?`<details class="disclosure" ${hasRisk&&step>0?'open':''}><summary>需補齊 ${r.missing.length} 項資料</summary><ul class="missing-list">${r.missing.map(x=>`<li>${escape(x)}</li>`).join('')}</ul></details>`:''}${r.canRecommend?`<div class="notice info">追蹤：${escape(r.followup)}</div>`:''}</div>
- <div class="card"><div class="card-title"><h2>院內藥品選項</h2><span class="step-tag">${r.candidates.length?`${r.candidates.length} 項討論候選`:'逐品項檢核'}</span></div>${r.candidates.length?`<p class="hint">依治療需求及肝腎規則列出候選，來源與限制如下；完整交互作用與給付仍需核對。此處選擇僅加入摘要。</p>${candidates.map(drugCard).join('')}`:`<div class="empty-result"><div class="empty-symbol" aria-hidden="true">${r.action==='maintain'?'✓':'＋'}</div>${r.action==='maintain'&&r.canRecommend?'目前達標，原型不列新增藥品。':r.action==='lifestyle'&&r.canRecommend?'目前先採生活型態介入，尚不列初始藥品。':r.canRecommend?'目前沒有可直接列出的合適品項；請檢視遵從性、療程或個別評估。':'完成資料與安全檢核後，顯示可討論的院內品項。'}</div>`}${organPanel(r)}<details class="disclosure"><summary>選藥範圍與限制</summary><ul><li>複方依療程與適應症列出，不限制與原處方相同成分或劑量；更換時重新確認適合的強度與耐受性。</li><li>複方以取代原處方評估，不能直接加在相同成分上。</li><li>單方 ezetimibe 尚未確認院內供應；查無可選品項不代表無臨床治療選擇。</li><li>處方集非即時庫存，正式開立前仍需核對。</li></ul></details></div>
+ <div class="card"><div class="card-title"><h2>院內藥品選項</h2><span class="step-tag">${r.candidates.length?`${r.candidates.length} 項討論候選`:'逐品項檢核'}</span></div>${r.candidates.length?`<p class="hint">依療程與肝腎條件列出選項；適應症、單方治療紀錄與併用藥請於開立時核對。此處選擇僅加入摘要。</p>${candidates.map(drugCard).join('')}`:`<div class="empty-result"><div class="empty-symbol" aria-hidden="true">${r.action==='maintain'?'✓':'＋'}</div>${r.action==='maintain'&&r.canRecommend?'目前達標，原型不列新增藥品。':r.action==='lifestyle'&&r.canRecommend?'目前先採生活型態介入，尚不列初始藥品。':r.canRecommend?'目前沒有可直接列出的合適品項；請檢視遵從性、療程或個別評估。':'完成資料與安全檢核後，顯示可討論的院內品項。'}</div>`}${organPanel(r)}<details class="disclosure"><summary>選藥範圍與限制</summary><ul><li>複方依療程與適應症列出，不限制與原處方相同成分或劑量；更換時重新確認適合的強度與耐受性。</li><li>複方以取代原處方評估，不能直接加在相同成分上。</li><li>單方 ezetimibe 尚未確認院內供應；查無可選品項不代表無臨床治療選擇。</li><li>處方集非即時庫存，正式開立前仍需核對。</li></ul></details></div>
  <div class="result-actions"><button class="secondary" id="summary-button">查看／複製摘要</button><button class="secondary" data-go-rules>查看規則依據</button></div>`;
  if(step<1){$('results').querySelectorAll('.card').forEach(el=>el.hidden=true);$('results').querySelector('.result-actions').insertAdjacentHTML('beforebegin',`<div class="notice info">${step===0?'先完成風險分級即可查看治療目標。若要評估治療，再填血脂、療程與安全資料。':'完成本步的血脂與安全資料後，再確認目前治療，即可查看治療方向與院內藥品。'}</div>${r.errors.length?`<div class="notice danger">請修正：${r.errors.map(k=>escape(fieldNames[k]||k)).join('、')}。</div>`:''}`);}
  $('summary-button').addEventListener('click',openSummary);$('expand-drugs')?.addEventListener('click',()=>{showAll=!showAll;renderResult();});
@@ -128,7 +128,7 @@ function renderResult(){
  updateValidation();
 }
 function drugCard(d){const chosen=selected===d.id;const use=d.group==='combo'?`評估換為此複方；${result.current?.statin!==d.statin?'更換 statin 成分，不同成分的 mg 劑量不可直接比較':d.dose===Number(state.dose)?'保留相同 statin 劑量並加入 ezetimibe':'會變動 statin 劑量，需確認治療強度與耐受性'}。原處方須同步調整。`:d.group==='advanced'?'進階評估選項，需確認個別適應症、療效證據與病人偏好。':`${d.intensity==='high'?'高':'中'}強度 statin 參考品項；實際處方劑量須依病人條件核對。`;
- return `<article class="drug-card"><div class="drug-top"><div class="drug-name">${escape(d.brand)} <span>${escape(d.strength)}</span><small>${escape(d.ingredients)}</small></div><span class="tag ${d.payment==='self'?'self':''}">${d.payment==='self'?'院內自費':d.group==='combo'?'複方':d.intensity==='high'?'高強度':d.group==='advanced'?'進階治療':'中強度'}</span></div><p class="drug-use">${escape(use)}</p>${d.specialist?'<span class="tag">限專科，條件待核對</span>':''}${d.note?`<p class="drug-use">本機備註：${escape(d.note)}</p>`:''}${organDetails(d.organ,d,'candidate')}<div class="coverage">給付檢核｜${escape(d.coverage)}</div><button class="select-drug ${chosen?'selected':''}" data-select-drug="${d.id}" aria-pressed="${chosen}">${chosen?'已加入討論摘要':'加入討論摘要'}</button></article>`;
+ return `<article class="drug-card"><div class="drug-top"><div class="drug-name">${escape(d.brand)} <span>${escape(d.strength)}</span><small>${escape(d.ingredients)}</small></div><span class="tag ${d.payment==='self'?'self':''}">${d.payment==='self'?'院內自費':d.group==='combo'?'複方':d.intensity==='high'?'高強度':d.group==='advanced'?'進階治療':'中強度'}</span></div><p class="drug-use">${escape(use)}</p>${d.specialist?'<span class="tag">限專科，條件待核對</span>':''}${d.note?`<p class="drug-use">本機備註：${escape(d.note)}</p>`:''}${organDetails(d.organ,d,'candidate')}<div class="coverage">療程檢核｜${escape(d.coverage)}</div><button class="select-drug ${chosen?'selected':''}" data-select-drug="${d.id}" aria-pressed="${chosen}">${chosen?'已加入討論摘要':'加入討論摘要'}</button></article>`;
 }
 const renalOptions={
  clcr:{label:'CLcr 範圍（mL/min/1.73m²）',options:[['','請選擇範圍'],['30plus','≥30 mL/min/1.73m²'],['below30','＜30 mL/min/1.73m²']],help:'Rosuvastatin 仿單採體表面積校正的 CLcr，不以 eGFR 或未校正 CrCl 代替。'},
@@ -137,7 +137,8 @@ const renalOptions={
 };
 function renalDrugField(d,context){
  if(!d||!context||state.dialysis!=='no')return '';
- const key=d.statin==='rosuvastatin'?'clcr':d.id==='pravafen'?'crcl':d.id==='fenolip160'?'fenoCrcl':'';if(!key)return '';
+ const key=LipidOrgan.renalQuestion(d,state);if(!key)return '';
+ if(key==='clcr'&&LipidOrgan.normalRenalScreen(state))return '';
  const spec=renalOptions[key],id='renal-'+context+'-'+d.id,required=E.requiredFields(state,drugs()).includes(key),missing=submitted&&required&&!state[key];
  return '<div class="field renal-drug-field"><label for="'+id+'">'+escape(spec.label)+(required?'<span class="required-tag">必填</span>':'')+'</label><p class="hint">'+(required?'目前用藥需要此資料，才能完成劑量檢核。':'考慮此品項時再選；同一指標的選擇會同步套用相關品項。')+'</p><select id="'+id+'" name="'+key+'" data-renal-key="'+key+'" class="'+(missing?'missing-control':'')+'" '+(required?'aria-required="true"':'')+' '+(missing?'aria-invalid="true"':'')+' aria-describedby="'+id+'-help">'+spec.options.map(([v,t])=>'<option value="'+v+'" '+(state[key]===v?'selected':'')+'>'+escape(t)+'</option>').join('')+'</select><small id="'+id+'-help">'+escape(spec.help)+'</small></div>';
 }
@@ -203,7 +204,7 @@ function change(ev){const el=ev.target;if(!el.name||!(el.name in state))return;i
  $('results').addEventListener('change',ev=>{const el=ev.target,key=el.dataset.renalKey;if(!renalOptions[key])return;const id=el.id;state[key]=el.value;selected='';renderResult();($(id)||$('results').querySelector('[data-renal-key="'+key+'"]'))?.focus({preventScroll:true});});
  $('assessment-form').addEventListener('input',change);$('assessment-form').addEventListener('change',ev=>{if(ev.target.tagName==='SELECT')change(ev);});$('assessment-form').addEventListener('submit',ev=>ev.preventDefault());
  $('next').addEventListener('click',()=>step<1?setStep(step+1):viewResults());$('previous').addEventListener('click',()=>setStep(step-1));$('jump-result').addEventListener('click',viewResults);
- $('reset').addEventListener('click',()=>{state={...E.blank(),liverScreen:'unknown'};submitted=false;selected='';showAll=false;syncForm();setStep(0,false);renderResult();toast('已清空，所有未確認條件回到不清楚。');});
+ $('reset').addEventListener('click',()=>{state={...E.blank(),liverScreen:'unknown',simplifiedTreatment:true};submitted=false;selected='';showAll=false;syncForm();setStep(0,false);renderResult();toast('已清空，所有未確認條件回到不清楚。');});
  document.querySelectorAll('[data-clear-group]').forEach(b=>b.addEventListener('click',()=>{const list=b.dataset.clearGroup==='disease'?[...D.riskFields,...D.advancedFields]:D.rfFields;for(const [k]of list)state[k]='no';selected='';syncForm();renderResult();toast('本組已依您的確認設為否；可逐項修改。');}));
  $('close-editor').addEventListener('click',()=>$('drug-editor').close());$('close-summary').addEventListener('click',()=>$('summary-dialog').close());
  $('drug-edit-form').addEventListener('submit',ev=>{ev.preventDefault();const id=$('edit-id').value;if(!D.drugs.some(d=>d.id===id))return;overrides[id]={availability:$('edit-availability').value,specialist:$('edit-specialist').value==='true',note:$('edit-note').value.trim().slice(0,300)};const saved=saveOverrides();$('drug-editor').close();renderCatalog();renderResult();if(saved)toast('已儲存本機設定，候選清單已更新。');});
