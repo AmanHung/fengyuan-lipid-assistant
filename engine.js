@@ -147,7 +147,7 @@ function evaluate(s,drugs=D.drugs,now=new Date()){
  else if(ageDays>183)warnings.push('血脂檢驗超過 6 個月，建議重新檢測後確認治療。');
  if(s.ckd==='yes'&&s.dialysis==='yes')warnings.push('CKD 透析前條件與目前透析狀態矛盾，已排除該分層依據。');
  if(!s.simplifiedTreatment&&(s.gemfibrozil==='yes'))stops.push('Gemfibrozil 與 statin 併用會增加肌病／橫紋肌溶解及急性腎損傷風險：應避免／不建議併用。Rosuvastatin 若不得已併用，起始 5 mg、最高 10 mg／日，仍需個別評估。本原型暫停自動列藥，請檢視目前用藥及各品項交互作用。');
- if(s.tolerance==='none'&&current?.statin)warnings.push('完全不耐受與目前含 statin 處方不一致，請先確認目前治療。');
+ if(s.tolerance==='none'&&current?.statin)warnings.push('不耐受與目前含 statin 處方不一致，請先確認目前治療。');
  if(s.mode==='treated'&&current&&['tg','other','othercombo'].includes(current.group))stops.push('目前為 TG 用藥或其他複方，需檢視所有成分與原適應症');
  if(!s.simplifiedTreatment&&s.mode==='treated'&&current?.statin&&!current.ezetimibe&&s.addEze==='no'&&s.primaryHyper!=='yes')warnings.push(s.primaryHyper==='no'?'未符合 ezetimibe 複方的規定適應症，不列含 ezetimibe 複方。':'請確認「符合 ezetimibe 複方的規定適應症」；未確認前不列含 ezetimibe 複方。');
  const risk={...low,...levels[low.rank],upperRank:high.rank,upperName:levels[high.rank].name,provisional:low.rank!==high.rank};
@@ -168,7 +168,7 @@ function evaluate(s,drugs=D.drugs,now=new Date()){
   else {action='intensify';title='尚未達標，評估調整強度或合併治療';description='確認遵從性、可耐受劑量與次發原因，再評估高強度 statin、含 ezetimibe 方案或進階治療。';followup='更動治療後 1–3 個月追蹤；實際依藥品與病況調整。';}
  }
  }
- if(s.tolerance==='none'&&achieved===false&&action!=='lifestyle'){action='nonstatin';title='Statin 完全不耐受，需個別評估 non-statin';description='不列含 statin 的複方。先核對不耐受紀錄與可選替代方案；原型僅列進一步討論品項。';}
+ if(s.tolerance==='none'&&achieved===false&&action!=='lifestyle'){action='nonstatin';title='Statin 不耐受，需個別評估 non-statin';description='不列含 statin 的複方。先核對不耐受紀錄與可選替代方案；原型僅列進一步討論品項。';}
  if(s.liver==='yes'&&achieved===false&&!['lifestyle','observe','adherence'].includes(action)){action='nonstatin';title='活動性肝病：排除含 statin 製劑，逐項評估替代治療';description='非 statin 也需檢查肝病程度與使用資料，不能直接視為適用。';}
  const organChecks=drugs.map(d=>({...d,organ:O.check(d,s.simplifiedTreatment?{...s,gemfibrozil:'unknown'}:s,{initial:s.mode!=='treated',dose:d.id===current?.id&&d.statin?number(s.dose):d.dose})}));
  const currentOrgan=organChecks.find(d=>d.id===current?.id)?.organ||null;
