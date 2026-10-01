@@ -73,8 +73,8 @@ function check(d,s,{initial=false,dose=d.dose}={}){
    if(dialysis)add('review','血液透析不能套用「未透析且 CLcr ＜30」的劑量規則，需個別評估。');
    else if(!['below30','30plus'].includes(s.clcr)&&!normalRenalScreen(s)&&!defaultClcr30Screen(s)&&!severeRenalScreen(s))add('pending','需核對仿單使用的 CLcr 範圍，才能確認 rosuvastatin 劑量。');
    else if(s.clcr==='below30'||severeRenalScreen(s)){
-    doseText=severeRenalScreen(s)?'eGFR ＜30：採保守篩選，起始規格評估 5 mg，每日一次；本版不推薦超過 10 mg／日。':'未透析且 CLcr ＜30：起始 5 mg，每日一次；上限 10 mg／日。';
-    if(severeRenalScreen(s))notes.push('依 eGFR ＜30 保守限制品項，省略重複 CLcr 確認；未換算 CLcr，特殊體型或腎功能不穩定者仍需個別核對。');
+    doseText=severeRenalScreen(s)?'eGFR ＜30：系統預設 CLcr ＜30 劑量分支；起始 5 mg，每日一次，上限 10 mg／日。':'未透析且 CLcr ＜30：起始 5 mg，每日一次；上限 10 mg／日。';
+    if(severeRenalScreen(s))notes.push('eGFR 15–未滿 30 或 ＜15：系統預設採 CLcr ＜30 分支，不需另選；此為流程預設，非實測或換算 CLcr。已知實際清除率資料優先，特殊體型或腎功能不穩定者需個別核對。');
     if(Number(dose)>10)add('contra',severeRenalScreen(s)?'依低 eGFR 保守篩選，此超過 10 mg／日規格不列入建議。':'Rosuvastatin 劑量超過嚴重腎功能不全的 10 mg／日上限。');
     else if(initial&&Number(dose)>5)add('adjust','起始需 5 mg；院內清單僅有 10／20 mg，未確認可分錠，不自動推薦半錠。');
     else add('monitor',severeRenalScreen(s)?'續用劑量未超過本版保守上限；仍需監測並核對實際腎功能與劑量。':'劑量在腎功能上限內；需監測肌肉不良反應。');
