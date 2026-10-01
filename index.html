@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>降血脂決策助手｜豐原醫院藥劑科</title>
+  <meta name="description" content="豐原醫院降血脂臨床決策助手・院內討論原型">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='11' fill='%230c5266'/%3E%3Cpath d='M8 21h7l3-9 5 17 3-8h6' fill='none' stroke='%2393edcb' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="validation.css">
+  <script defer src="data.js"></script><script defer src="organ.js"></script><script defer src="engine.js"></script><script defer src="app.js"></script>
+</head>
+<body>
+  <header class="topbar"><div class="brand"><span class="brand-mark" aria-hidden="true">✚</span><div><strong>降血脂決策助手</strong><span>衛生福利部豐原醫院 · 藥劑科</span></div></div><span class="version">院內討論原型 <b>v2</b></span></header>
+  <nav class="navigation" aria-label="主要導覽"><button class="nav active" data-page="assessment" aria-current="page">臨床評估</button><button class="nav" data-page="formulary">院內藥品</button><button class="nav" data-page="rules">規則與依據</button></nav>
+  <main>
+    <div class="prototype-note"><span class="note-dot"></span><span>原型測試中，僅供流程討論。規則尚未院內核定，給付結果為初步檢核；不產生處方。</span></div>
+    <section id="page-assessment">
+      <div class="page-heading"><div><p class="eyebrow">CLINICAL DECISION SUPPORT</p><h1>先確認風險，只回答必要的問題。</h1><p class="subtle">由高到低逐步判斷；足以分級時即停止追問，再依需要評估治療。</p></div><div class="case-controls"><button class="text-button" id="reset">清空評估</button></div></div>
+      <div class="workspace"><div class="assessment-panel"><div class="steps" role="tablist" aria-label="評估步驟"><button role="tab" id="step-tab-0" data-step="0" aria-selected="true" aria-controls="step-0" class="step active"><span>1</span>風險分級</button><button role="tab" id="step-tab-1" data-step="1" aria-selected="false" aria-controls="step-1" class="step"><span>2</span>血脂與安全</button><button role="tab" id="step-tab-2" data-step="2" aria-selected="false" aria-controls="step-2" class="step"><span>3</span>目前治療</button></div>
+        <form id="assessment-form" novalidate><div id="step-1" class="step-content" role="tabpanel" aria-labelledby="step-tab-1" hidden><h2>血脂與基本資料</h2><p class="hint">不需姓名或病歷號。評估資料僅保留於本次頁面，重新整理即清除。</p><div id="basic-fields" class="fields"></div><div class="section-label">用藥前的重要情況</div><div id="safety-fields" class="tri-list"></div></div>
+        <div id="step-0" class="step-content" role="tabpanel" aria-labelledby="step-tab-0"><h2>先找出最高風險</h2><p class="hint">先選已確認的疾病，系統只追問會改變分級的條件。不清楚可先保留；不會當成沒有。</p><div id="risk-fields"></div></div>
+        <div id="step-2" class="step-content" role="tabpanel" aria-labelledby="step-tab-2" hidden><h2>目前治療與耐受性</h2><p class="hint">療程、適應症與品項條件會影響給付；未填完整時保留待確認。</p><div id="treatment-fields" class="fields"></div><div id="treatment-tris" class="tri-list"></div></div>
+        <div class="form-footer"><button type="button" id="previous" class="secondary">上一步</button><span id="step-description">步驟 1／3</span><button type="button" id="next" class="primary">下一步：風險評估</button></div></form>
+      </div><aside class="results" id="results" aria-label="評估結果"></aside></div>
+    </section>
+    <section id="page-formulary" hidden></section><section id="page-rules" hidden></section>
+    <footer class="site-footer"><span>規則草案 2026.10.01 · 健保來源生效日 115.09.01</span><span>資料不足時，保留臨床確認空間。</span></footer>
+  </main>
+  <div class="mobile-result"><button id="jump-result">查看目前評估</button></div><div id="toast" role="status" aria-live="polite"></div>
+  <dialog id="drug-editor"><form id="drug-edit-form"><div class="dialog-head"><h2>品項維護示範</h2><button type="button" class="icon-button" id="close-editor" aria-label="關閉">×</button></div><p class="hint">僅儲存在這個瀏覽器，不會更新 HIS 或正式處方集。原型不提供帳號或發布流程。</p><input type="hidden" id="edit-id"><strong id="edit-name"></strong><label>供應狀態<select id="edit-availability"><option value="active">正常供應</option><option value="shortage">缺貨</option><option value="inactive">已停用</option></select></label><label>院內處方限制<select id="edit-specialist"><option value="false">未標示限專科</option><option value="true">限專科</option></select></label><label>維護備註<textarea id="edit-note" rows="3" maxlength="300"></textarea></label><div class="dialog-actions"><button type="button" id="reset-drug" class="secondary">還原此品項</button><button type="submit" class="primary">儲存本機設定</button></div></form></dialog>
+  <dialog id="summary-dialog"><div class="dialog-head"><h2>評估摘要</h2><button id="close-summary" class="icon-button" aria-label="關閉摘要">×</button></div><label for="summary-text">可複製文字，含未確認條件與規則版本</label><textarea id="summary-text" readonly rows="14"></textarea><button class="primary" id="copy-summary">複製摘要</button></dialog>
+</body></html>

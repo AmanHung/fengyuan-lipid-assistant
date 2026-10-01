@@ -1,0 +1,10 @@
+.field>label{display:flex;align-items:flex-start;gap:8px;justify-content:space-between}
+.required-tag{display:inline-block;flex-shrink:0;margin-left:auto;padding:1px 5px;border-radius:4px;background:#fff0ee;color:#a53e35;font-size:11px;font-weight:700;line-height:1.5;white-space:nowrap}
+.tri-label{position:relative}
+.tri-label:has(.required-tag){padding-right:42px}
+.tri-label>.required-tag{position:absolute;top:0;right:0}
+input.missing-control,select.missing-control,fieldset.missing-control{border:2px solid #c8473b!important;background:#fff5f3;box-shadow:0 0 0 1px #c8473b12}
+.step.has-missing{color:#ad4036;border-bottom-color:#d89088}
+.step.has-missing span{background:#fff0ee;color:#a53e35}
+.validation-summary{margin:0 24px 18px}
+.field:has([aria-invalid=true])>label,.tri-row:has([aria-invalid=true])>.tri-label{color:#9c362f}
