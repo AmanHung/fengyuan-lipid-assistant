@@ -149,6 +149,7 @@ function evaluate(s,drugs=D.drugs,now=new Date()){
  if(s.gemfibrozil==='yes')stops.push('Gemfibrozil 與 statin 併用會增加肌病／橫紋肌溶解及急性腎損傷風險：應避免／不建議併用。Rosuvastatin 若不得已併用，起始 5 mg、最高 10 mg／日，仍需個別評估。本原型暫停自動列藥，請檢視目前用藥及各品項交互作用。');
  if(s.tolerance==='none'&&current?.statin)warnings.push('完全不耐受與目前含 statin 處方不一致，請先確認目前治療。');
  if(s.mode==='treated'&&current&&['tg','other','othercombo'].includes(current.group))stops.push('目前為 TG 用藥或其他複方，需檢視所有成分與原適應症');
+ if(s.mode==='treated'&&current?.statin&&!current.ezetimibe&&s.addEze==='no'&&s.primaryHyper!=='yes')warnings.push(s.primaryHyper==='no'?'未符合 ezetimibe 複方的規定適應症，不列含 ezetimibe 複方。':'請確認「符合 ezetimibe 複方的規定適應症」；未確認前不列含 ezetimibe 複方。');
  const risk={...low,...levels[low.rank],upperRank:high.rank,upperName:levels[high.rank].name,provisional:low.rank!==high.rank};
  const achieved=ldl===null||risk.provisional?null:ldl<risk.target;
  const since=day(s.since),days=since?diffDays(since,now):null;
@@ -195,10 +196,9 @@ function evaluate(s,drugs=D.drugs,now=new Date()){
    if(action==='initiate')return false;
    if(d.payment==='combo8w'&&!(responseDays>42))return false;
    if(d.payment==='combo3m'&&!months3)return false;
+   if(s.primaryHyper!=='yes')return false;
+   if(!current?.statin)return false;
    if(current?.ezetimibe||s.addEze==='yes')return false;
-   if(current?.statin!==d.statin)return false;
-   if(d.dose<number(s.dose))return false;
-   if((s.tolerance==='partial'||s.maxTolerated==='yes')&&d.dose!==number(s.dose))return false;
    return true;
   }
   return d.group==='advanced'&&action==='intensify'&&(currentIntensity==='high'||s.maxTolerated==='yes'||s.tolerance==='partial'||renalDoseLimited);
