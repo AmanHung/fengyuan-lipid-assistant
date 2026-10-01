@@ -7,8 +7,8 @@ const levels=[{name:'零項風險因子',target:160},{name:'低風險',target:13
 const ranges={
  age:[['under18','未滿 18 歲',0,18],['18to44','18–44 歲',18,45],['45to54','45–54 歲',45,55],['55plus','55 歲以上',55,121]],
  egfr:[['60plus','≥60 mL/min/1.73m²',60,201],['30to59','30 至未滿 60 mL/min/1.73m²',30,60],['15to29','15 至未滿 30 mL/min/1.73m²',15,30],['below15','＜15 mL/min/1.73m²',1,15]],
- tg:[['below150','＜150 mg/dL',1,150],['150to399','150–399 mg/dL',150,400],['400to499','400–499 mg/dL',400,500],['500to999','500–999 mg/dL',500,1000],['1000plus','≥1,000 mg/dL',1000,10001]],
- lifestyleMonths:[['below3','未滿 3 個月',0,3],['3to5','3 個月至未滿 6 個月',3,6],['6plus','6 個月以上',6,121]],
+ tg:[['below150','＜150 mg/dL',1,150],['150to399','150–399 mg/dL',150,400],['400to499','400–499 mg/dL',400,500],['500to999','500–999 mg/dL',500,1000],['1000plus','≥1,000 mg/dL',1000,10001],['below500','＜500 mg/dL',1,500],['500plus','≥500 mg/dL',500,10001]],
+ lifestyleMonths:[['below3','未滿 3 個月',0,3],['3to5','3 個月至未滿 6 個月',3,6],['6plus','6 個月以上',6,121],['3plus','已滿 3 個月',3,121]],
  waist:[['below80','＜80 cm',30,80],['80to89','80 至未滿 90 cm',80,90],['90plus','≥90 cm',90,251]],
  sbp:[['below130','＜130 mmHg',40,130],['130plus','≥130 mmHg',130,301]],
  dbp:[['below85','＜85 mmHg',20,85],['85plus','≥85 mmHg',85,201]],
@@ -27,7 +27,7 @@ const diseaseRules=[
  ...['cad','acs','pad','stroke','revasc','stenosis'].map(k=>({rank:4,keys:[k],label:D.riskFields.find(f=>f[0]===k)[1]})),
  ...['dm','cac','prior190'].map(k=>({rank:3,keys:[k],label:D.riskFields.find(f=>f[0]===k)[1]}))
 ];
-const triNames=[...D.riskFields,...D.advancedFields,...D.rfFields,...D.safetyFields].map(x=>x[0]).concat(['bpMeds','glucoseMeds','tgMeds','adherence','maxTolerated','gemfibrozil','primaryHyper','addEze','metabolicPeriod']);
+const triNames=[...D.riskFields,...D.advancedFields,...D.rfFields,...D.safetyFields].map(x=>x[0]).concat(['bpMeds','glucoseMeds','tgMeds','adherence','maxTolerated','gemfibrozil','primaryHyper','addEze','metabolicPeriod','tgMetabolic']);
 function blank(){const s={age:'',sex:'',ldl:'',baseline:'',hdl:'',tg:'',tc:'',egfr:'',clcr:'',crcl:'',fenoCrcl:'',hepatic:'',enzymes:'',labDate:'',waist:'',sbp:'',dbp:'',glucose:'',mode:'',drug:'',dose:'',since:'',lifestyleMonths:'',tolerance:'',};triNames.forEach(k=>s[k]='unknown');return s;}
 function number(v){return v===''||v===null||v===undefined||rangeMap.has(v)?null:Number(v);}
 function todayString(now=new Date()){return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;}
@@ -40,7 +40,7 @@ function either(a,b){return a===true||b===true?true:a===false&&b===false?false:n
 function metabolic(s){
  const sex=s.sex,hdl=number(s.hdl);
  const lowHDL=!sex||hdl===null?null:hdl<(sex==='male'?40:50);
- const vals=[!sex?null:threshold(s.waist,sex==='male'?90:80),either(either(threshold(s.sbp,130),threshold(s.dbp,85)),bool(s.bpMeds)),either(threshold(s.glucose,100),bool(s.glucoseMeds)),either(threshold(s.tg,150),bool(s.tgMeds)),lowHDL];
+ const vals=[!sex?null:threshold(s.waist,sex==='male'?90:80),either(either(threshold(s.sbp,130),threshold(s.dbp,85)),bool(s.bpMeds)),either(threshold(s.glucose,100),bool(s.glucoseMeds)),either(s.tg==='range:tg:below500'?bool(s.tgMetabolic):threshold(s.tg,150),bool(s.tgMeds)),lowHDL];
  const yes=vals.filter(v=>v===true).length,unknown=vals.filter(v=>v===null).length;
  const raw=yes>=3?true:yes+unknown<3?false:null;
  return {values:vals,yes,unknown,value:s.metabolicPeriod==='yes'?raw:null,lowHDL};
@@ -93,7 +93,7 @@ function requiredFields(s,drugs=D.drugs){
  if(s.mode==='treated'&&current?.id==='pravafen'&&O.renalQuestion(current,s)==='crcl')keys.push('crcl');
  if(s.mode==='treated'&&current?.id==='fenolip160'&&O.renalQuestion(current,s)==='fenoCrcl')keys.push('fenoCrcl');
  if(['none','lifestyle'].includes(s.mode)&&risk.rank<=2)keys.push('lifestyleMonths');
- if(!q.done){keys.push(...q.keys);if(q.lower){if(risk.rf[4]===null)keys.push('hdl');if(risk.rf[5]===null){keys.push('metabolicPeriod');const groups=[['waist'],['sbp','dbp','bpMeds'],['glucose','glucoseMeds'],['tg','tgMeds'],['hdl']];risk.metabolic.values.forEach((v,i)=>{if(v===null)keys.push(...groups[i]);});}}}
+ if(!q.done){keys.push(...q.keys);if(q.lower){if(risk.rf[4]===null)keys.push('hdl');if(risk.rf[5]===null){keys.push('metabolicPeriod');const groups=[['waist'],['sbp','dbp','bpMeds'],['glucose','glucoseMeds'],[s.tg==='range:tg:below500'?'tgMetabolic':'tg','tgMeds'],['hdl']];risk.metabolic.values.forEach((v,i)=>{if(v===null)keys.push(...groups[i]);});}}}
  return [...new Set(keys)];
 }
 function missingFields(s,drugs=D.drugs){return requiredFields(s,drugs).filter(k=>s[k]===''||s[k]===null||s[k]===undefined||s[k]==='unknown');}
