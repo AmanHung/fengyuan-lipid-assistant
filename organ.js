@@ -38,12 +38,13 @@ const labels={ok:'肝腎條件可討論',monitor:'需監測',adjust:'需較低�
 const priority={ok:0,monitor:1,adjust:2,pending:3,review:4,avoid:5,contra:6};
 function egfrBand(v){if(/^range:egfr:/.test(v||''))return v.split(':')[2];if(v===''||v===undefined)return null;const n=Number(v);return !Number.isFinite(n)?null:n<15?'below15':n<30?'15to29':n<60?'30to59':'60plus';}
 function normalRenalScreen(s){return s.dialysis==='no'&&egfrBand(s.egfr)==='60plus'&&s.clcr!=='below30';}
+function defaultClcr30Screen(s){return s.dialysis==='no'&&egfrBand(s.egfr)==='30to59'&&!['below30','30plus'].includes(s.clcr);}
 function severeRenalScreen(s){return s.dialysis==='no'&&['15to29','below15'].includes(egfrBand(s.egfr))&&!['below30','30plus'].includes(s.clcr);}
 function renalQuestion(d,s){
  if(s.dialysis!=='no')return '';
  const key=d.statin==='rosuvastatin'?'clcr':d.id==='pravafen'?'crcl':d.id==='fenolip160'?'fenoCrcl':'';
  if(!key)return '';
- if(key==='clcr'&&(normalRenalScreen(s)||severeRenalScreen(s)))return '';
+ if(key==='clcr'&&(normalRenalScreen(s)||defaultClcr30Screen(s)||severeRenalScreen(s)))return '';
  if(['contra','avoid','review'].includes(check(d,s).status))return '';
  return key;
 }
@@ -68,16 +69,16 @@ function check(d,s,{initial=false,dose=d.dose}={}){
   if(d.statin==='atorvastatin'){cite(d.id==='atotin10'?'atotin10TW':d.id==='atotin20'?'atotin20TW':'ator');notes.push('Atorvastatin 不需因腎功能不全調整劑量；仍須檢查交互作用。');}
   if(d.statin==='rosuvastatin'){
    cite('rosu',d.brand==='Crestor');
-   notes.push(normalRenalScreen(s)&&!s.clcr?'eGFR ≥60：依腎功能篩檢先列可討論品項，省略額外 CLcr 選單；未計算或換算 CLcr。體型或肌肉量特殊、腎功能不穩定時，開立前仍須核對仿單指標。':'本仿單以 CLcr（mL/min/1.73m²）分級，不能直接以 eGFR 或未校正 CrCl 替代。');
+   notes.push(defaultClcr30Screen(s)?'eGFR 30–未滿 60：系統預設採 CLcr ≥30 的劑量分支，不需另選；此為流程預設，非測得或換算 CLcr。接近 30、體型或肌肉量特殊、腎功能不穩定時，開立前需核對實際指標。':normalRenalScreen(s)&&!s.clcr?'eGFR ≥60：依腎功能篩檢先列可討論品項，省略額外 CLcr 選單；未計算或換算 CLcr。體型或肌肉量特殊、腎功能不穩定時，開立前仍須核對仿單指標。':'本仿單以 CLcr（mL/min/1.73m²）分級，不能直接以 eGFR 或未校正 CrCl 替代。');
    if(dialysis)add('review','血液透析不能套用「未透析且 CLcr ＜30」的劑量規則，需個別評估。');
-   else if(!['below30','30plus'].includes(s.clcr)&&!normalRenalScreen(s)&&!severeRenalScreen(s))add('pending','需核對仿單使用的 CLcr 範圍，才能確認 rosuvastatin 劑量。');
+   else if(!['below30','30plus'].includes(s.clcr)&&!normalRenalScreen(s)&&!defaultClcr30Screen(s)&&!severeRenalScreen(s))add('pending','需核對仿單使用的 CLcr 範圍，才能確認 rosuvastatin 劑量。');
    else if(s.clcr==='below30'||severeRenalScreen(s)){
     doseText=severeRenalScreen(s)?'eGFR ＜30：採保守篩選，起始規格評估 5 mg，每日一次；本版不推薦超過 10 mg／日。':'未透析且 CLcr ＜30：起始 5 mg，每日一次；上限 10 mg／日。';
     if(severeRenalScreen(s))notes.push('依 eGFR ＜30 保守限制品項，省略重複 CLcr 確認；未換算 CLcr，特殊體型或腎功能不穩定者仍需個別核對。');
     if(Number(dose)>10)add('contra',severeRenalScreen(s)?'依低 eGFR 保守篩選，此超過 10 mg／日規格不列入建議。':'Rosuvastatin 劑量超過嚴重腎功能不全的 10 mg／日上限。');
     else if(initial&&Number(dose)>5)add('adjust','起始需 5 mg；院內清單僅有 10／20 mg，未確認可分錠，不自動推薦半錠。');
     else add('monitor',severeRenalScreen(s)?'續用劑量未超過本版保守上限；仍需監測並核對實際腎功能與劑量。':'劑量在腎功能上限內；需監測肌肉不良反應。');
-   } else notes.push(s.clcr==='30plus'?'CLcr ≥30：仿單不要求腎功能減量；亞洲病人起始劑量仍須評估 5 mg。':'尚無 CLcr 數值；亞洲病人起始劑量仍須評估 5 mg。');
+   } else notes.push(defaultClcr30Screen(s)?'依系統預設的 CLcr ≥30 分支：不另作腎功能減量；亞洲病人起始仍須評估 5 mg。':s.clcr==='30plus'?'CLcr ≥30：仿單不要求腎功能減量；亞洲病人起始劑量仍須評估 5 mg。':'尚無 CLcr 數值；亞洲病人起始劑量仍須評估 5 mg。');
   }
   if(d.statin==='pitavastatin'){
    cite(productSources[d.id]||'pitarty4TW');
@@ -189,5 +190,5 @@ function sortChecks(items){return [...items].sort((a,b)=>{
  const rank=d=>d.availability==='inactive'?7:(priority[d.organ.status]??4);
  return rank(a)-rank(b);
 });}
-const api={sources,labels,check,egfrBand,normalRenalScreen,severeRenalScreen,renalQuestion,sortChecks};root.LipidOrgan=api;if(typeof module!=='undefined')module.exports=api;
+const api={sources,labels,check,egfrBand,normalRenalScreen,defaultClcr30Screen,severeRenalScreen,renalQuestion,sortChecks};root.LipidOrgan=api;if(typeof module!=='undefined')module.exports=api;
 })(globalThis);
